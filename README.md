@@ -6,7 +6,7 @@
 
 > 实验项目，不是 xAI 官方连接器。维护尽力而为。Gmail / Outlook 请继续用官方连接器。安全问题走 [Private vulnerability reporting](https://github.com/evilmordy/cn-mail-mcp/security/advisories/new)，不要在公开 issue 里贴授权码。
 >
-> **品牌名：`cn-mail-mcp`。** GitHub 仓库目前仍是 [`evilmordy/cn-mail-mcp`](https://github.com/evilmordy/cn-mail-mcp)（`gh` 未登录时暂未改名）；npm 包名与 MCP 短名已是 `cn-mail-mcp`。旧名 `qqconnect` / `grok-bot-cn-mail` 仍可作为 CLI 别名。
+> **品牌名：`cn-mail-mcp`。** 仓库：[evilmordy/cn-mail-mcp](https://github.com/evilmordy/cn-mail-mcp)。旧路径 `evilmordy/grok-bot-cn-mail` 会跳转到新地址。旧 CLI 名 `qqconnect` / `grok-bot-cn-mail` 仍可用。
 
 ## 安装
 
