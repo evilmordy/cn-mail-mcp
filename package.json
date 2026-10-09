@@ -14,11 +14,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/evilmordy/grok-bot-cn-mail.git"
+    "url": "git+https://github.com/evilmordy/cn-mail-mcp.git"
   },
-  "homepage": "https://github.com/evilmordy/grok-bot-cn-mail",
+  "homepage": "https://github.com/evilmordy/cn-mail-mcp",
   "bugs": {
-    "url": "https://github.com/evilmordy/grok-bot-cn-mail/issues"
+    "url": "https://github.com/evilmordy/cn-mail-mcp/issues"
   },
   "main": "./dist/index.js",
   "files": [

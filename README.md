@@ -4,9 +4,9 @@
 
 默认**只读**。授权码放 `.env` 或系统密钥框，**不要发给模型、不要进 git**。
 
-> 实验项目，不是 xAI 官方连接器。维护尽力而为。Gmail / Outlook 请继续用官方连接器。安全问题走 [Private vulnerability reporting](https://github.com/evilmordy/grok-bot-cn-mail/security/advisories/new)，不要在公开 issue 里贴授权码。
+> 实验项目，不是 xAI 官方连接器。维护尽力而为。Gmail / Outlook 请继续用官方连接器。安全问题走 [Private vulnerability reporting](https://github.com/evilmordy/cn-mail-mcp/security/advisories/new)，不要在公开 issue 里贴授权码。
 >
-> **品牌名：`cn-mail-mcp`。** GitHub 仓库目前仍是 [`evilmordy/grok-bot-cn-mail`](https://github.com/evilmordy/grok-bot-cn-mail)（`gh` 未登录时暂未改名）；npm 包名与 MCP 短名已是 `cn-mail-mcp`。旧名 `qqconnect` / `grok-bot-cn-mail` 仍可作为 CLI 别名。
+> **品牌名：`cn-mail-mcp`。** GitHub 仓库目前仍是 [`evilmordy/cn-mail-mcp`](https://github.com/evilmordy/cn-mail-mcp)（`gh` 未登录时暂未改名）；npm 包名与 MCP 短名已是 `cn-mail-mcp`。旧名 `qqconnect` / `grok-bot-cn-mail` 仍可作为 CLI 别名。
 
 ## 安装
 
