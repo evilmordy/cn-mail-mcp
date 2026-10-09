@@ -10,20 +10,22 @@ import { createMailServer } from "./mcp/server.js";
 import { initRuntime, watchScriptOrExit } from "./runtime.js";
 
 function usage(): void {
-  process.stderr.write(`grok-bot-cn-mail (qqconnect) — IMAP MCP for Grok Bot (read by default; draft/send via config)
+  process.stderr.write(`cn-mail-mcp — IMAP MCP for Grok Bot (QQ / 163 / 126 / Tencent exmail; read by default)
 
 Usage:
-  qqconnect                 start MCP on stdio
-  qqconnect --check         login to each mailbox and exit
-  qqconnect setup           interactive mode picker
-  qqconnect config show
-  qqconnect config set-mode read|draft|send [--allow a@b.com]
-  qqconnect config allowlist add|remove|set a@b.com,...
-  qqconnect config allow-sensitive on|off
-  qqconnect config unbind <account_id>
+  cn-mail-mcp                 start MCP on stdio
+  cn-mail-mcp --check         login to each mailbox and exit
+  cn-mail-mcp setup           interactive mode picker
+  cn-mail-mcp config show
+  cn-mail-mcp config set-mode read|draft|send [--allow a@b.com]
+  cn-mail-mcp config allowlist add|remove|set a@b.com,...
+  cn-mail-mcp config allow-sensitive on|off
+  cn-mail-mcp config unbind <account_id>
+
+Aliases (deprecated): grok-bot-cn-mail, qqconnect
 
 Secrets (.env): MAIL_USER / MAIL_AUTH_CODE
-Policy (.grok-bot-cn-mail.json or .qqconnect.json): mode, send_allowlist, allow_sensitive
+Policy (.cn-mail-mcp.json; also reads .grok-bot-cn-mail.json / .qqconnect.json): mode, send_allowlist, allow_sensitive
 `);
 }
 

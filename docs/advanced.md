@@ -13,7 +13,7 @@
 
 ## 草稿与发送
 
-不推荐作默认。`.env` 只放地址和授权码。档位在 `.grok-bot-cn-mail.json`（或已有的 `.qqconnect.json`）。
+不推荐作默认。`.env` 只放地址和授权码。档位在 `.cn-mail-mcp.json`（也会读已有的 `.grok-bot-cn-mail.json` / `.qqconnect.json`）。
 
 网页邮箱须 **SMTP 已开启**（和 IMAP 同一页）。白名单为空不能进入 send。真发信还要确认卡片。不要用 `grok --always-approve`。
 
@@ -36,7 +36,7 @@ node dist/index.js setup
 
 不要把地址或授权码发进聊天。`list_accounts` / `get_settings` 会返回下一槽的变量名（`add_mailbox`）。
 
-**Grok Bot：** 在插件密钥框填写 `MAIL_USER_2`、`MAIL_AUTH_CODE_2`，可选 `MAIL_ACCOUNT_ID_2`。填好后重载 qqconnect。不要改仓库、不要写 `.env`、不要改 MCP 启动命令。
+**Grok Bot：** 在插件密钥框填写 `MAIL_USER_2`、`MAIL_AUTH_CODE_2`，可选 `MAIL_ACCOUNT_ID_2`。填好后重载 cn-mail-mcp。不要改仓库、不要写 `.env`、不要改 MCP 启动命令。
 
 **本机 TUI / `.env`：** 第二封用 `_2`：
 
@@ -54,10 +54,10 @@ MAIL_ACCOUNT_ID_2=work
 
 对 Bot 说「解绑某某邮箱」。正确路径是 `unbind_mailbox` + 确认卡，不是改仓库。
 
-- **Grok Bot：** 确认后在插件密钥框删除该号的 `MAIL_USER_*` / `MAIL_AUTH_CODE_*`（见工具返回的 `cleared_env`），再重载 qqconnect。
+- **Grok Bot：** 确认后在插件密钥框删除该号的 `MAIL_USER_*` / `MAIL_AUTH_CODE_*`（见工具返回的 `cleared_env`），再重载 cn-mail-mcp。
 - **本机：** `node dist/index.js config unbind <account_id>`，或让工具从 `.env` 删掉这些键。不必杀 MCP。
 
-这不会删除 QQ/163 服务器上的邮件。JSON 多账号（`QQCONNECT_ACCOUNTS`）请在密钥框改 JSON 后重载。
+这不会删除 QQ/163 服务器上的邮件。JSON 多账号（`CN_MAIL_MCP_ACCOUNTS` / `QQCONNECT_ACCOUNTS`）请在密钥框改 JSON 后重载。
 
 JSON 里只放地址，授权码指向环境变量名：`authCodeEnv`，禁止内联 `authCode`。自建邮箱须公网 `host`、993、TLS。内网和云元数据 IP 会被拒绝。
 
@@ -83,7 +83,7 @@ JSON 里只放地址，授权码指向环境变量名：`authCodeEnv`，禁止�
 
 ## 更新 MCP
 
-先停止 qqconnect，再换文件，再启动。不要在 connected 时删掉插件目录。`get_settings` 的 `server.needs_restart` 为真时，停再开即可，不是 IMAP 坏了。
+先停止 cn-mail-mcp，再换文件，再启动。不要在 connected 时删掉插件目录。`get_settings` 的 `server.needs_restart` 为真时，停再开即可，不是 IMAP 坏了。
 
 ## 常见问题
 

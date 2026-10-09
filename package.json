@@ -1,15 +1,16 @@
 {
-  "name": "grok-bot-cn-mail",
+  "name": "cn-mail-mcp",
   "version": "0.1.0",
-  "description": "IMAP MCP so Grok Bot can search and read QQ / 163 / 126 / Tencent exmail.",
+  "description": "IMAP MCP (cn-mail-mcp) so Grok Bot can search and read QQ / 163 / 126 / Tencent exmail.",
   "type": "module",
   "packageManager": "pnpm@11.8.0",
   "engines": {
     "node": ">=22"
   },
   "bin": {
-    "qqconnect": "./dist/index.js",
-    "grok-bot-cn-mail": "./dist/index.js"
+    "cn-mail-mcp": "./dist/index.js",
+    "grok-bot-cn-mail": "./dist/index.js",
+    "qqconnect": "./dist/index.js"
   },
   "repository": {
     "type": "git",
@@ -43,6 +44,8 @@
     "mcp",
     "imap",
     "qq-mail",
+    "163",
+    "cn-mail",
     "grok-bot",
     "email"
   ],

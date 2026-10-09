@@ -1,5 +1,6 @@
 import { logInfo } from "../log.js";
 import { stripKeysFromDotEnvFiles } from "./dotenv.js";
+import { ACCOUNTS_ENV_NAMES, envFirst } from "./env.js";
 import { domainOf, isPrivateOrMetadataHost, resolvePreset, type ImapPreset } from "./presets.js";
 
 export type Account = {
@@ -27,10 +28,10 @@ function parseJsonAccounts(raw: string): Account[] {
   try {
     parsed = JSON.parse(raw);
   } catch {
-    throw new Error("QQCONNECT_ACCOUNTS must be JSON array");
+    throw new Error("CN_MAIL_MCP_ACCOUNTS / QQCONNECT_ACCOUNTS must be JSON array");
   }
   if (!Array.isArray(parsed) || parsed.length === 0) {
-    throw new Error("QQCONNECT_ACCOUNTS must be a non-empty JSON array");
+    throw new Error("CN_MAIL_MCP_ACCOUNTS / QQCONNECT_ACCOUNTS must be a non-empty JSON array");
   }
   return parsed.map((row, i) => {
     const acct = accountFromRow(row, i, false);
@@ -147,12 +148,12 @@ function parseEnvAccounts(): Account[] {
 }
 
 export function loadAccounts(opts?: { allowEmpty?: boolean }): Account[] {
-  const json = readEnv("QQCONNECT_ACCOUNTS");
+  const json = envFirst(ACCOUNTS_ENV_NAMES);
   const accounts = json ? parseJsonAccounts(json) : parseEnvAccounts();
   if (accounts.length === 0) {
     if (opts?.allowEmpty) return [];
     throw new Error(
-      "no mailbox configured: set MAIL_USER + MAIL_AUTH_CODE (or MAIL_USER_2 / MAIL_AUTH_CODE_2 …), or QQCONNECT_ACCOUNTS JSON",
+      "no mailbox configured: set MAIL_USER + MAIL_AUTH_CODE (or MAIL_USER_2 / MAIL_AUTH_CODE_2 …), or CN_MAIL_MCP_ACCOUNTS / QQCONNECT_ACCOUNTS JSON",
     );
   }
   const ids = new Set<string>();
@@ -215,10 +216,10 @@ function envKeysForSlot(index: number): string[] {
 export function unbindEnvAccount(account: Account): { cleared: string[] } {
   if (account.jsonBound) {
     throw new Error(
-      `account ${account.id} was loaded from QQCONNECT_ACCOUNTS JSON; remove that entry in the secret box, then reload MCP`,
+      `account ${account.id} was loaded from CN_MAIL_MCP_ACCOUNTS / QQCONNECT_ACCOUNTS JSON; remove that entry in the secret box, then reload MCP`,
     );
   }
-  const keys = account.envKeys.filter((k) => k !== "QQCONNECT_ACCOUNTS");
+  const keys = account.envKeys.filter((k) => !(ACCOUNTS_ENV_NAMES as readonly string[]).includes(k));
   if (keys.length === 0) {
     throw new Error(`account ${account.id} has no env keys to clear`);
   }

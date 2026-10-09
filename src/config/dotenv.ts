@@ -2,12 +2,13 @@ import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { logInfo } from "../log.js";
+import { DOTENV_ENV_NAMES, envFirst } from "./env.js";
 
 const KEY = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
-/** Secrets and connection facts only. Policy (mode/allowlist) lives in .grok-bot-cn-mail.json. */
+/** Secrets and connection facts only. Policy lives in .cn-mail-mcp.json (legacy names still read). */
 const SECRET_OR_CONN =
-  /^(MAIL_[A-Z0-9_]+|QQCONNECT_(USER|AUTH_CODE|ACCOUNTS|HOST|SMTP_HOST|SMTP_PORT|IMAP_ID|MAIL_PROXY|IMAP_PROXY))$/;
+  /^(MAIL_[A-Z0-9_]+|QQCONNECT_(USER|AUTH_CODE|ACCOUNTS|HOST|SMTP_HOST|SMTP_PORT|IMAP_ID|MAIL_PROXY|IMAP_PROXY)|CN_MAIL_MCP_(ACCOUNTS|HOST|SMTP_HOST|SMTP_PORT|IMAP_ID|MAIL_PROXY|IMAP_PROXY|USER|AUTH_CODE)|CNMAIL_(ACCOUNTS|HOST|SMTP_HOST|SMTP_PORT|IMAP_ID|MAIL_PROXY|IMAP_PROXY|USER|AUTH_CODE))$/;
 
 /** Apply KEY=VALUE lines. Does not override non-empty existing env (Grok `-e` wins). */
 export function applyDotEnvText(text: string, env: NodeJS.ProcessEnv = process.env): string[] {
@@ -41,7 +42,7 @@ export function envFileCandidates(fromModuleUrl: string = import.meta.url): stri
   const pluginRoot = process.env.GROK_PLUGIN_ROOT?.trim();
   if (pluginRoot) out.push(join(pluginRoot, ".env"));
   out.push(join(dir, "..", "..", ".env"), join(process.cwd(), ".env"));
-  const explicit = process.env.QQCONNECT_DOTENV?.trim();
+  const explicit = envFirst(DOTENV_ENV_NAMES)?.trim();
   if (explicit) out.push(explicit);
   return [...new Set(out)];
 }

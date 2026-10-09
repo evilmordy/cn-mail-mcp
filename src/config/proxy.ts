@@ -1,9 +1,19 @@
 /** Loopback-only HTTP(S) CONNECT proxy for IMAP/SMTP egress (env-configured). */
 
+import {
+  IMAP_PROXY_ENV_NAMES,
+  MAIL_PROXY_ENV_NAMES,
+  envFirst,
+} from "./env.js";
+
 const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "::1"]);
 
-export type MailProxyEnv = {
+export type MailProxyEnv = NodeJS.ProcessEnv & {
+  CN_MAIL_MCP_MAIL_PROXY?: string;
+  CNMAIL_MAIL_PROXY?: string;
   QQCONNECT_MAIL_PROXY?: string;
+  CN_MAIL_MCP_IMAP_PROXY?: string;
+  CNMAIL_IMAP_PROXY?: string;
   QQCONNECT_IMAP_PROXY?: string;
   SAND_EGRESS_TUNNEL_PROXY_ADDR?: string;
 };
@@ -49,14 +59,14 @@ export function parseLoopbackHttpProxyUrl(raw: string): string {
 
 /**
  * Resolve optional mail proxy from env (never from tool args).
- * Preference: QQCONNECT_MAIL_PROXY → QQCONNECT_IMAP_PROXY → SAND_EGRESS_TUNNEL_PROXY_ADDR as http://HOST:PORT.
+ * Preference: CN_MAIL_MCP_MAIL_PROXY / CNMAIL_* / QQCONNECT_MAIL_PROXY → IMAP_PROXY aliases → SAND_EGRESS_TUNNEL_PROXY_ADDR.
  * Returns undefined when unset. Throws if a provided value fails validation.
  */
 export function resolveMailProxyUrl(env: MailProxyEnv = process.env): string | undefined {
-  const preferred = env.QQCONNECT_MAIL_PROXY?.trim();
+  const preferred = envFirst(MAIL_PROXY_ENV_NAMES, env)?.trim();
   if (preferred) return parseLoopbackHttpProxyUrl(preferred);
 
-  const legacy = env.QQCONNECT_IMAP_PROXY?.trim();
+  const legacy = envFirst(IMAP_PROXY_ENV_NAMES, env)?.trim();
   if (legacy) return parseLoopbackHttpProxyUrl(legacy);
 
   const sand = env.SAND_EGRESS_TUNNEL_PROXY_ADDR?.trim();

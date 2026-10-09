@@ -3,6 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { logError } from "../log.js";
 import { parseSendAllowlist } from "./allowlist.js";
+import { CONFIG_ENV_NAMES, envFirst } from "./env.js";
 
 export type ConnectMode = "read" | "draft" | "send";
 
@@ -26,10 +27,12 @@ export function overrideSettingsForTest(value: Settings | null): void {
   cache = null;
 }
 
-const SETTINGS_NAMES = [".grok-bot-cn-mail.json", ".qqconnect.json"];
+/** Preferred first; legacy names kept for existing installs. */
+const SETTINGS_NAMES = [".cn-mail-mcp.json", ".grok-bot-cn-mail.json", ".qqconnect.json"];
+const SEND_COUNT_NAMES = [".cn-mail-mcp.send-count.json", ".grok-bot-cn-mail.send-count.json"];
 
 function settingsFileCandidates(fromModuleUrl: string = import.meta.url): string[] {
-  const explicit = process.env.QQCONNECT_CONFIG?.trim();
+  const explicit = envFirst(CONFIG_ENV_NAMES)?.trim();
   if (explicit) return [explicit];
   const dir = dirname(fileURLToPath(fromModuleUrl));
   const roots = [join(dir, "..", ".."), process.cwd()];
@@ -43,15 +46,20 @@ function settingsFileCandidates(fromModuleUrl: string = import.meta.url): string
   return out;
 }
 
-/** Existing settings file, or the grok-bot-cn-mail name for a first write. */
+/** Existing settings file, or .cn-mail-mcp.json for a first write. */
 export function settingsPath(fromModuleUrl?: string): string {
   const cands = settingsFileCandidates(fromModuleUrl);
   const existing = cands.find((p) => existsSync(p));
-  return existing ?? cands[0] ?? join(process.cwd(), ".grok-bot-cn-mail.json");
+  return existing ?? cands[0] ?? join(process.cwd(), ".cn-mail-mcp.json");
 }
 
 export function sendCountPath(): string {
-  return join(dirname(settingsPath()), ".grok-bot-cn-mail.send-count.json");
+  const dir = dirname(settingsPath());
+  for (const name of SEND_COUNT_NAMES) {
+    const p = join(dir, name);
+    if (existsSync(p)) return p;
+  }
+  return join(dir, SEND_COUNT_NAMES[0]!);
 }
 
 function parseSettings(raw: unknown): Settings {

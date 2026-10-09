@@ -83,7 +83,7 @@ export async function runCli(argv: string[]): Promise<void> {
 async function runSetup(): Promise<void> {
   const rl = createInterface({ input, output });
   try {
-    process.stdout.write("qqconnect 档位：1 只读  2 草稿  3 发送\n");
+    process.stdout.write("cn-mail-mcp 档位：1 只读  2 草稿  3 发送\n");
     const choice = (await rl.question("选 [1/2/3]（默认 1）：")).trim() || "1";
     let mode: ConnectMode = "read";
     if (choice === "2") mode = "draft";

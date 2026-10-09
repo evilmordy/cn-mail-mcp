@@ -31,12 +31,20 @@ describe("applyDotEnvText", () => {
     applyDotEnvText("QQCONNECT_MAIL_PROXY=http://127.0.0.1:8791\n", env);
     expect(env.QQCONNECT_MAIL_PROXY).toBe("http://127.0.0.1:8791");
   });
+
+  it("allows CN_MAIL_MCP_MAIL_PROXY from dotenv", () => {
+    const env: NodeJS.ProcessEnv = {};
+    applyDotEnvText("CN_MAIL_MCP_MAIL_PROXY=http://127.0.0.1:8791\n", env);
+    expect(env.CN_MAIL_MCP_MAIL_PROXY).toBe("http://127.0.0.1:8791");
+  });
 });
 
 describe("envFileCandidates", () => {
   afterEach(() => {
     delete process.env.GROK_PLUGIN_ROOT;
     delete process.env.QQCONNECT_DOTENV;
+    delete process.env.CN_MAIL_MCP_DOTENV;
+    delete process.env.CNMAIL_DOTENV;
   });
 
   it("strips named keys and keeps comments", () => {

@@ -14,7 +14,7 @@ export type Rfc822Input = {
 
 export function generateMessageId(domain: string): string {
   const rand = crypto.randomUUID();
-  return `<qqconnect.${rand}@${domain}>`;
+  return `<cn-mail-mcp.${rand}@${domain}>`;
 }
 
 export function replySubject(original?: string): string {

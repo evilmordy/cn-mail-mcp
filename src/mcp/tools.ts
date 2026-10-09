@@ -11,6 +11,7 @@ import {
   settingsGuide,
   type ConnectMode,
 } from "../config/settings.js";
+import { SEND_UNSAFE_ENV_NAMES, envFirst } from "../config/env.js";
 import { addMailboxHint, unbindMailboxHint } from "../config/accounts.js";
 import { clampLimit } from "../imap/search.js";
 import { capRecipients, collectAddresses, replyTargets } from "../mail/compose.js";
@@ -164,7 +165,7 @@ function parseRecipients(to: string, cc?: string): { to: string[]; cc: string[] 
 }
 
 function unsafeSkipConfirm(): boolean {
-  const v = (process.env.QQCONNECT_SEND_UNSAFE_NO_CONFIRM ?? "").trim().toLowerCase();
+  const v = (envFirst(SEND_UNSAFE_ENV_NAMES) ?? "").trim().toLowerCase();
   return v === "1" || v === "true";
 }
 

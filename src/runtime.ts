@@ -6,7 +6,7 @@ import { logError } from "./log.js";
 export const SERVER_VERSION = "0.1.0";
 
 const RESTART_GUIDE =
-  "请停止再启动 qqconnect。不要卸载排查，不要改 MCP 启动命令，不要在进程还连着时 rm -rf 插件或工作区。";
+  "请停止再启动 cn-mail-mcp。不要卸载排查，不要改 MCP 启动命令，不要在进程还连着时 rm -rf 插件或工作区。";
 
 type Boot = { path: string; mtimeMs: number; size: number; startedAt: string };
 

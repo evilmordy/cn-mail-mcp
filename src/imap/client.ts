@@ -110,7 +110,7 @@ export class ImapMailBackend implements MailBackend {
       disableAutoIdle: true,
       disableIMAP4rev2: account.preset.disableImap4rev2,
       clientInfo: account.sendImapId
-        ? { name: "grok-bot-cn-mail", version: SERVER_VERSION, vendor: "grok-bot-cn-mail" }
+        ? { name: "cn-mail-mcp", version: SERVER_VERSION, vendor: "cn-mail-mcp" }
         : undefined,
       tls: { minVersion: "TLSv1.2", rejectUnauthorized: true },
       ...(proxy ? { proxy } : {}),

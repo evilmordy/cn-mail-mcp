@@ -7,6 +7,8 @@ import { overrideSettingsForTest } from "./config/settings.js";
 
 afterEach(() => {
   delete process.env.QQCONNECT_CONFIG;
+  delete process.env.CN_MAIL_MCP_CONFIG;
+  delete process.env.CNMAIL_CONFIG;
   overrideSettingsForTest(null);
 });
 

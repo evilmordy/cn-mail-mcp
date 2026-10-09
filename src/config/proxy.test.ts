@@ -25,17 +25,21 @@ describe("resolveMailProxyUrl", () => {
     /* env objects are local; nothing global to clear */
   });
 
-  it("prefers QQCONNECT_MAIL_PROXY over legacy and SAND", () => {
+  it("prefers CN_MAIL_MCP_MAIL_PROXY over QQCONNECT and SAND", () => {
     expect(
       resolveMailProxyUrl({
-        QQCONNECT_MAIL_PROXY: "http://127.0.0.1:8791",
+        CN_MAIL_MCP_MAIL_PROXY: "http://127.0.0.1:8791",
+        QQCONNECT_MAIL_PROXY: "http://127.0.0.1:8888",
         QQCONNECT_IMAP_PROXY: "http://127.0.0.1:9999",
         SAND_EGRESS_TUNNEL_PROXY_ADDR: "127.0.0.1:1111",
       }),
     ).toBe("http://127.0.0.1:8791");
   });
 
-  it("falls back to QQCONNECT_IMAP_PROXY then SAND host:port", () => {
+  it("falls back to QQCONNECT_MAIL_PROXY then IMAP_PROXY then SAND", () => {
+    expect(resolveMailProxyUrl({ QQCONNECT_MAIL_PROXY: "http://127.0.0.1:8791" })).toBe(
+      "http://127.0.0.1:8791",
+    );
     expect(resolveMailProxyUrl({ QQCONNECT_IMAP_PROXY: "http://127.0.0.1:9999" })).toBe(
       "http://127.0.0.1:9999",
     );
@@ -49,7 +53,7 @@ describe("resolveMailProxyUrl", () => {
   });
 
   it("throws on invalid configured proxy", () => {
-    expect(() => resolveMailProxyUrl({ QQCONNECT_MAIL_PROXY: "socks5://127.0.0.1:1" })).toThrow();
+    expect(() => resolveMailProxyUrl({ CN_MAIL_MCP_MAIL_PROXY: "socks5://127.0.0.1:1" })).toThrow();
     expect(() => resolveMailProxyUrl({ SAND_EGRESS_TUNNEL_PROXY_ADDR: "8.8.8.8:8791" })).toThrow(
       /loopback/,
     );

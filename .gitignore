@@ -4,9 +4,11 @@ dist/
 .env
 .env.*
 !.env.example
-.qqconnect.json
+.cn-mail-mcp.json
+.cn-mail-mcp.send-count.json
 .grok-bot-cn-mail.json
 .grok-bot-cn-mail.send-count.json
+.qqconnect.json
 *.log
 coverage/
 .DS_Store

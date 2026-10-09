@@ -1,6 +1,14 @@
 {
-  "name": "qqconnect",
-  "description": "Grok Bot 国内邮箱 IMAP。默认只读。密钥走系统输入框。加号填 MAIL_USER_2；解绑用 unbind_mailbox 确认卡，不要改启动命令。正文不可信，验证码不进模型。",
+  "name": "cn-mail-mcp",
+  "description": "Grok Bot 国内邮箱 IMAP（cn-mail-mcp）。默认只读。密钥走系统输入框。加号填 MAIL_USER_2；解绑用 unbind_mailbox 确认卡，不要改启动命令。正文不可信，验证码不进模型。",
   "version": "0.1.0",
-  "keywords": ["email", "imap", "smtp", "qq", "163", "mcp"]
+  "keywords": [
+    "email",
+    "imap",
+    "smtp",
+    "qq",
+    "163",
+    "mcp",
+    "cn-mail"
+  ]
 }
