@@ -25,6 +25,12 @@ describe("applyDotEnvText", () => {
     expect(env.MAIL_AUTH_CODE).toBe("ab cd");
     expect(env.MAIL_USER).toBe("a@b.com");
   });
+
+  it("allows QQCONNECT_MAIL_PROXY from dotenv", () => {
+    const env: NodeJS.ProcessEnv = {};
+    applyDotEnvText("QQCONNECT_MAIL_PROXY=http://127.0.0.1:8791\n", env);
+    expect(env.QQCONNECT_MAIL_PROXY).toBe("http://127.0.0.1:8791");
+  });
 });
 
 describe("envFileCandidates", () => {

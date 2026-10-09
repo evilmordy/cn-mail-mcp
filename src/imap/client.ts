@@ -1,6 +1,7 @@
 import { ImapFlow } from "imapflow";
 import { loadAccounts, publicAccountView, unbindEnvAccount, type Account } from "../config/accounts.js";
 import { loadDotEnv } from "../config/dotenv.js";
+import { resolveMailProxyUrl } from "../config/proxy.js";
 import { assertPublicMailHost } from "../config/presets.js";
 import { logError, logInfo, logWarn } from "../log.js";
 import { collectAddresses, replyTargets } from "../mail/compose.js";
@@ -99,6 +100,7 @@ export class ImapMailBackend implements MailBackend {
   }
 
   private createClient(account: Account): ImapFlow {
+    const proxy = resolveMailProxyUrl();
     const client = new ImapFlow({
       host: account.host,
       port: account.port,
@@ -111,6 +113,7 @@ export class ImapMailBackend implements MailBackend {
         ? { name: "grok-bot-cn-mail", version: SERVER_VERSION, vendor: "grok-bot-cn-mail" }
         : undefined,
       tls: { minVersion: "TLSv1.2", rejectUnauthorized: true },
+      ...(proxy ? { proxy } : {}),
     });
     client.on("error", (err) => {
       logError("imap.error", err, { accountId: account.id, host: account.host });
@@ -150,7 +153,8 @@ export class ImapMailBackend implements MailBackend {
     }
     if (existing && imapUsable(existing.client)) return existing.client;
     await this.drop(account.id);
-    await assertPublicMailHost(account.host);
+    const proxy = resolveMailProxyUrl();
+    await assertPublicMailHost(account.host, undefined, { viaProxy: Boolean(proxy) });
     const client = this.createClient(account);
     await client.connect();
     this.slots.set(account.id, { client });
@@ -365,7 +369,8 @@ export class ImapMailBackend implements MailBackend {
     const results: { id: string; ok: boolean; error?: string }[] = [];
     for (const account of this.accounts) {
       try {
-        await assertPublicMailHost(account.host);
+        const proxy = resolveMailProxyUrl();
+        await assertPublicMailHost(account.host, undefined, { viaProxy: Boolean(proxy) });
         const client = this.createClient(account);
         try {
           await client.connect();

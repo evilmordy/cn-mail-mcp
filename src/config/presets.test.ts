@@ -51,4 +51,22 @@ describe("assertPublicMailHost", () => {
       assertPublicMailHost("imap.qq.com", async () => [{ address: "8.8.8.8" }]),
     ).resolves.toBeUndefined();
   });
+
+  it("rejects private host literals even when viaProxy", async () => {
+    await expect(assertPublicMailHost("127.0.0.1", async () => [], { viaProxy: true })).rejects.toThrow(
+      /not allowed/,
+    );
+  });
+
+  it("skips DNS privacy check when viaProxy", async () => {
+    await expect(
+      assertPublicMailHost(
+        "imap.qq.com",
+        async () => {
+          throw new Error("lookup should not run");
+        },
+        { viaProxy: true },
+      ),
+    ).resolves.toBeUndefined();
+  });
 });

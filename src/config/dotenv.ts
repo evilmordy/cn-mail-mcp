@@ -7,7 +7,7 @@ const KEY = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
 /** Secrets and connection facts only. Policy (mode/allowlist) lives in .grok-bot-cn-mail.json. */
 const SECRET_OR_CONN =
-  /^(MAIL_[A-Z0-9_]+|QQCONNECT_(USER|AUTH_CODE|ACCOUNTS|HOST|SMTP_HOST|SMTP_PORT|IMAP_ID))$/;
+  /^(MAIL_[A-Z0-9_]+|QQCONNECT_(USER|AUTH_CODE|ACCOUNTS|HOST|SMTP_HOST|SMTP_PORT|IMAP_ID|MAIL_PROXY|IMAP_PROXY))$/;
 
 /** Apply KEY=VALUE lines. Does not override non-empty existing env (Grok `-e` wins). */
 export function applyDotEnvText(text: string, env: NodeJS.ProcessEnv = process.env): string[] {

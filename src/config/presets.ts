@@ -174,10 +174,21 @@ async function defaultLookup(host: string): Promise<Array<{ address: string }>> 
   return lookup(host, { all: true, verbatim: true });
 }
 
+export type AssertPublicMailHostOpts = {
+  /**
+   * When true, skip the DNS A-record privacy check after literal/name checks.
+   * HTTP CONNECT proxies receive the hostname unresolved; local fake-IP DNS
+   * (e.g. 198.18.0.0/15) is meaningless for the tunnel and must not block connect.
+   * Does not relax private/metadata host *literals* or blocked names.
+   */
+  viaProxy?: boolean;
+};
+
 /** Reject private literals and names that resolve to private/metadata addresses. */
 export async function assertPublicMailHost(
   host: string,
   lookupFn: HostLookup = defaultLookup,
+  opts: AssertPublicMailHostOpts = {},
 ): Promise<void> {
   const h = stripHostBrackets(host);
   if (!h) throw new Error("mail host is empty");
@@ -185,6 +196,7 @@ export async function assertPublicMailHost(
     throw new Error(`host ${host} is not allowed`);
   }
   if (isIP(h)) return;
+  if (opts.viaProxy) return;
   let addrs: Array<{ address: string }>;
   try {
     addrs = await lookupFn(h);

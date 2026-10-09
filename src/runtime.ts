@@ -1,5 +1,6 @@
 import { existsSync, statSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { mailProxyEnabled } from "./config/proxy.js";
 import { logError } from "./log.js";
 
 export const SERVER_VERSION = "0.1.0";
@@ -31,6 +32,8 @@ export type ServerStatus = {
   started_at: string;
   needs_restart: boolean;
   guide: string;
+  /** Loopback HTTP CONNECT proxy active (env-configured; URL never exposed). */
+  mail_proxy_enabled: boolean;
 };
 
 export function serverStatus(): ServerStatus {
@@ -40,6 +43,7 @@ export function serverStatus(): ServerStatus {
       started_at: "",
       needs_restart: false,
       guide: "",
+      mail_proxy_enabled: mailProxyEnabled(),
     };
   }
   try {
@@ -50,6 +54,7 @@ export function serverStatus(): ServerStatus {
       started_at: boot.startedAt,
       needs_restart: changed,
       guide: changed ? RESTART_GUIDE : "当前进程与磁盘上的启动脚本一致。",
+      mail_proxy_enabled: mailProxyEnabled(),
     };
   } catch {
     return {
@@ -57,6 +62,7 @@ export function serverStatus(): ServerStatus {
       started_at: boot.startedAt,
       needs_restart: true,
       guide: RESTART_GUIDE,
+      mail_proxy_enabled: mailProxyEnabled(),
     };
   }
 }

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- 可选本机回环 HTTP CONNECT 代理（`QQCONNECT_MAIL_PROXY` / `QQCONNECT_IMAP_PROXY`，或自动用 `SAND_EGRESS_TUNNEL_PROXY_ADDR`）：仅 http(s)+loopback、无凭据；工具参数不可设；经代理时跳过邮件主机 DNS 私网检查（字面量仍拦）。
 - 打开 `allow_sensitive` 要确认卡（本机改 JSON / `config allow-sensitive on` 除外）。
 - 拒绝收件人和 RFC822 头里的 CR/LF。
 - 附件下载与读信走同一套验证码拦截；IMAP 下载有字节上限。

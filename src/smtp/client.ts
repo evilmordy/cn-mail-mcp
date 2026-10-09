@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "
 import { dirname } from "node:path";
 import nodemailer from "nodemailer";
 import type { Account } from "../config/accounts.js";
+import { resolveMailProxyUrl } from "../config/proxy.js";
 import { assertPublicMailHost } from "../config/presets.js";
 
 export const MAX_SENDS_PER_WINDOW = 5;
@@ -82,13 +83,15 @@ export async function sendSmtp(account: Account, payload: SmtpPayload): Promise<
   if (!account.smtpHost) {
     throw new Error(`account ${account.id} has no SMTP host; set smtpHost`);
   }
-  await assertPublicMailHost(account.smtpHost);
+  const proxy = resolveMailProxyUrl();
+  await assertPublicMailHost(account.smtpHost, undefined, { viaProxy: Boolean(proxy) });
   const transport = nodemailer.createTransport({
     host: account.smtpHost,
     port: account.smtpPort || 465,
     secure: true,
     auth: { user: account.address, pass: account.authCode },
     tls: { minVersion: "TLSv1.2", rejectUnauthorized: true },
+    ...(proxy ? { proxy } : {}),
   });
   try {
     await transport.sendMail({
