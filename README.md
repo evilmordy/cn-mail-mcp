@@ -1,12 +1,22 @@
 # cn-mail-mcp
 
-本机 IMAP MCP，让 **Grok Bot**（以及 Grok Build TUI）搜索、阅读 QQ / 163 / 126 / 腾讯企业邮。Grok 官方连接器只有 Gmail 和 Outlook。
+本机 IMAP MCP，搜索、阅读 QQ / 163 / 126 / 腾讯企业邮。接到 Grok Build 或 Grok Bot 之前，先看下面的出口限制。
 
 默认**只读**。授权码放 `.env` 或系统密钥框，**不要发给模型、不要进 git**。
 
 > 实验项目，不是 xAI 官方连接器。维护尽力而为。Gmail / Outlook 请继续用官方连接器。安全问题走 [Private vulnerability reporting](https://github.com/evilmordy/cn-mail-mcp/security/advisories/new)，不要在公开 issue 里贴授权码。
 >
-> **品牌名：`cn-mail-mcp`。** 仓库：[evilmordy/cn-mail-mcp](https://github.com/evilmordy/cn-mail-mcp)。旧路径 `evilmordy/grok-bot-cn-mail` 会跳转到新地址。旧 CLI 名 `qqconnect` / `grok-bot-cn-mail` 仍可用。
+> **品牌名：`cn-mail-mcp`。** 公开仓库：[evilmordy/cn-mail-mcp](https://github.com/evilmordy/cn-mail-mcp)。旧路径 `evilmordy/grok-bot-cn-mail` 会跳转到这里。旧 CLI 名 `qqconnect` / `grok-bot-cn-mail` 仍是别名。
+
+## 适用场景 / 限制
+
+Grok 官方连接器只有 Gmail 和 Outlook，没有通用 IMAP，也没有 QQ 插件。本 MCP 用 IMAP 覆盖 QQ / 163 / 126 / 腾讯企业邮（993）。发信走 SMTP（465），默认关。
+
+优先跑在允许 IMAP 出站的机器上，再接到 Grok Build。本机 `pnpm check` 能登录，这条路才算通。
+
+Grok Bot 云端盒子是可选的，成不成就看那台环境。常见情况：出口放行 HTTPS:443，但 HTTP CONNECT 到 IMAP:993 或 SMTP:465 会超时。DNS 也可能把邮件主机解析成 `198.18.0.x` 假 IP。
+
+`CN_MAIL_MCP_MAIL_PROXY` 是本机回环上的 HTTP CONNECT 代理。出口真能到达 993/465 时它才有用。IMAP 不能改走 443。端口到不了，设了代理也连不上。
 
 ## 安装
 
@@ -33,7 +43,7 @@ MAIL_AUTH_CODE=这里填16位授权码
 pnpm check
 ```
 
-只登录 IMAP 并退出。成功再接到 Grok。163 若报 `Unsafe Login`，不要改 POP3，见 [docs/advanced.md](./docs/advanced.md)。
+只登录 IMAP 并退出。成功再接到 Grok Build。163 若报 `Unsafe Login`，不要改 POP3，见 [docs/advanced.md](./docs/advanced.md)。
 
 **Grok Build**（仓库根目录执行一次）：
 
@@ -46,7 +56,7 @@ grok mcp doctor cn-mail-mcp
 
 **更新：** 先停止 cn-mail-mcp，再换文件 / `pnpm build`，再启动。不要在还连着时 `rm -rf` 目录。`get_settings` 里 `server.needs_restart` 为真时，只需停再开，不必当邮箱故障排查。
 
-**Grok Bot**：本机 `pnpm check` 通过后，对 Bot 说（只报变量名，不报值）：
+**Grok Bot**（可选）：先确认那台盒子的出口能到 IMAP:993，再接。本机 `pnpm check` 通过后，对 Bot 说（只报变量名，不报值）：
 
 > 添加自定义 MCP，名字 cn-mail-mcp，命令 `node`，参数写成你本机 `dist/index.js` 的绝对路径。请用系统密钥输入框填写 `MAIL_USER`、`MAIL_AUTH_CODE`（IMAP 授权码，不是网页密码）。不要把值写进对话。
 

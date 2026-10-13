@@ -2,7 +2,8 @@
 
 ## Unreleased
 
-- **Rename / brand:** public name is `cn-mail-mcp` (npm package, MCP short name, primary CLI bin). Deprecated CLI aliases: `grok-bot-cn-mail`, `qqconnect`. Settings prefer `.cn-mail-mcp.json` (still reads legacy files). Env: prefer `CN_MAIL_MCP_*` (also `CNMAIL_*`); `QQCONNECT_*` still accepted. GitHub repo path may remain `evilmordy/cn-mail-mcp` until renamed.
+- **Rename / brand:** public name is `cn-mail-mcp` (npm package, MCP short name, primary CLI bin). Deprecated CLI aliases: `grok-bot-cn-mail`, `qqconnect`. Settings prefer `.cn-mail-mcp.json` (still reads legacy files). Env: prefer `CN_MAIL_MCP_*` (also `CNMAIL_*`); `QQCONNECT_*` still accepted. GitHub repo is public at `https://github.com/evilmordy/cn-mail-mcp`; `evilmordy/grok-bot-cn-mail` redirects there.
+- README：写明适用场景。官方连接器只有 Gmail / Outlook。Grok Bot 云端盒子出口常只有 443，到 IMAP 993 / SMTP 465 的 CONNECT 可能超时；回环代理在端口到不了时帮不上。优先跑在允许 IMAP 的机器上。
 - 可选本机回环 HTTP CONNECT 代理（`CN_MAIL_MCP_MAIL_PROXY` / `QQCONNECT_MAIL_PROXY` 等，或自动用 `SAND_EGRESS_TUNNEL_PROXY_ADDR`）：仅 http(s)+loopback、无凭据；工具参数不可设；经代理时跳过邮件主机 DNS 私网检查（字面量仍拦）。
 - 打开 `allow_sensitive` 要确认卡（本机改 JSON / `config allow-sensitive on` 除外）。
 - 拒绝收件人和 RFC822 头里的 CR/LF。
