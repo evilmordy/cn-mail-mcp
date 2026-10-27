@@ -6,11 +6,11 @@ import { DOTENV_ENV_NAMES, envFirst } from "./env.js";
 
 const KEY = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
-/** Secrets and connection facts only. Policy lives in .cn-mail-mcp.json (legacy names still read). */
+/** Secrets and connection facts only. Policy lives in .cn-mail-mcp.json. */
 const SECRET_OR_CONN =
-  /^(MAIL_[A-Z0-9_]+|QQCONNECT_(USER|AUTH_CODE|ACCOUNTS|HOST|SMTP_HOST|SMTP_PORT|IMAP_ID|MAIL_PROXY|IMAP_PROXY)|CN_MAIL_MCP_(ACCOUNTS|HOST|SMTP_HOST|SMTP_PORT|IMAP_ID|MAIL_PROXY|IMAP_PROXY|USER|AUTH_CODE)|CNMAIL_(ACCOUNTS|HOST|SMTP_HOST|SMTP_PORT|IMAP_ID|MAIL_PROXY|IMAP_PROXY|USER|AUTH_CODE))$/;
+  /^(MAIL_[A-Z0-9_]+|CN_MAIL_MCP_(ACCOUNTS|ACCOUNTS_FILE|DOTENV|CONFIG|MAIL_PROXY|IMAP_PROXY|IMAP_ID))$/;
 
-/** Apply KEY=VALUE lines. Does not override non-empty existing env (Grok `-e` wins). */
+/** Apply KEY=VALUE lines. Does not override a non-empty existing env var. */
 export function applyDotEnvText(text: string, env: NodeJS.ProcessEnv = process.env): string[] {
   const applied: string[] = [];
   for (const raw of text.split(/\r?\n/)) {
@@ -38,10 +38,7 @@ export function applyDotEnvText(text: string, env: NodeJS.ProcessEnv = process.e
 
 export function envFileCandidates(fromModuleUrl: string = import.meta.url): string[] {
   const dir = dirname(fileURLToPath(fromModuleUrl));
-  const out: string[] = [];
-  const pluginRoot = process.env.GROK_PLUGIN_ROOT?.trim();
-  if (pluginRoot) out.push(join(pluginRoot, ".env"));
-  out.push(join(dir, "..", "..", ".env"), join(process.cwd(), ".env"));
+  const out = [join(dir, "..", "..", ".env"), join(process.cwd(), ".env")];
   const explicit = envFirst(DOTENV_ENV_NAMES)?.trim();
   if (explicit) out.push(explicit);
   return [...new Set(out)];

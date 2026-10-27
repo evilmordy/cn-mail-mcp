@@ -1,6 +1,7 @@
 import { inputRequired, inputResponse } from "@modelcontextprotocol/server";
 import * as z from "zod";
 import { assertRecipientsAllowed, parseSendAllowlist } from "../config/allowlist.js";
+import type { Account } from "../config/accounts.js";
 import {
   canDraft,
   canSend,
@@ -17,9 +18,11 @@ import { clampLimit } from "../imap/search.js";
 import { capRecipients, collectAddresses, replyTargets } from "../mail/compose.js";
 import { forwardSubject, replySubject } from "../mail/rfc822.js";
 import type { MailBackend, OutboundResult } from "../mail/types.js";
+import { handleAddMailbox, type OnboardingExtra } from "../onboarding/flow.js";
 import { createPendingSend, takePendingSend } from "./pending-send.js";
 import { serverStatus } from "../runtime.js";
 import { MAX_SENDS_PER_WINDOW, SendLimiter } from "../smtp/client.js";
+import type { BindPageServer } from "../onboarding/bind-page.js";
 
 const accountId = z
   .string()
@@ -43,14 +46,12 @@ function fail(message: string): { content: Array<{ type: "text"; text: string }>
   return { content: [{ type: "text", text: message }], isError: true };
 }
 
-export type ToolResult = {
+type ToolResult = {
   content: Array<{ type: "text"; text: string }>;
   isError?: boolean;
 };
 
-export type ToolExtra = {
-  inputResponses?: Record<string, unknown>;
-};
+export type ToolExtra = OnboardingExtra;
 
 type ElicitResult = ReturnType<typeof inputRequired>;
 type HandlerResult = ToolResult | ElicitResult;
@@ -58,6 +59,20 @@ type ConfirmOutcome = HandlerResult | undefined;
 
 export const toolSchemas = {
   list_accounts: z.object({}),
+  add_mailbox: z.object({
+    address: z
+      .string()
+      .optional()
+      .describe("Mailbox address such as you@qq.com. Never put an authorization code in this field."),
+    label: z.string().optional().describe("Optional label, not a secret"),
+    provider: z.enum(["auto", "qq", "163", "126", "exmail"]).optional().describe("auto selects by domain"),
+    account_id: z.string().optional().describe("Optional account id"),
+    bind_session: z
+      .string()
+      .optional()
+      .describe("Resume id echoed by the client. Never put an authorization code here."),
+  }),
+  verify_mailboxes: z.object({}),
   list_folders: z.object({ account_id: accountId }),
   search_messages: z.object({
     account_id: accountId,
@@ -160,6 +175,11 @@ type Register = (
   handler: (args: Record<string, unknown>, extra?: ToolExtra) => Promise<HandlerResult>,
 ) => void;
 
+export type RegisterOptions = {
+  verifyLogin?: (account: Account) => Promise<{ ok: boolean; error?: string }>;
+  pages?: BindPageServer;
+};
+
 function parseRecipients(to: string, cc?: string): { to: string[]; cc: string[] } {
   return capRecipients(collectAddresses(to), cc ? collectAddresses(cc) : []);
 }
@@ -252,6 +272,9 @@ function resolveAccountId(backend: MailBackend, id?: string): string {
     if (!accounts.some((a) => a.id === id)) throw new Error(`unknown account ${id}`);
     return id;
   }
+  if (accounts.length === 0) {
+    throw new Error("没有已绑定的邮箱。请调用 add_mailbox。不要向用户索取授权码。");
+  }
   if (accounts.length === 1 && accounts[0]) return accounts[0].id;
   throw new Error("多个邮箱时必须提供 account_id，请先 list_accounts");
 }
@@ -271,7 +294,7 @@ function mailboxSnapshot(backend: MailBackend) {
   };
 }
 
-export function registerMailTools(register: Register, backend: MailBackend): void {
+export function registerMailTools(register: Register, backend: MailBackend, options: RegisterOptions = {}): void {
   const limiter = new SendLimiter(
     MAX_SENDS_PER_WINDOW,
     process.env.VITEST ? undefined : { file: sendCountPath() },
@@ -281,7 +304,7 @@ export function registerMailTools(register: Register, backend: MailBackend): voi
     "list_accounts",
     {
       description:
-        "列出已绑定邮箱（不含密钥）。新任务应先 get_settings；多个邮箱时后续工具要带 account_id。加邮箱看 add_mailbox；解绑调用 unbind_mailbox。不要改仓库或 MCP 启动命令。",
+        "列出已绑定邮箱（不含授权码）。新任务应先 get_settings；多个邮箱时后续工具要带 account_id。加邮箱调用 add_mailbox，禁止向用户索取授权码。解绑调用 unbind_mailbox。",
       inputSchema: toolSchemas.list_accounts,
     },
     async () => {
@@ -290,6 +313,49 @@ export function registerMailTools(register: Register, backend: MailBackend): voi
           ...mailboxSnapshot(backend),
           settings: getSettings(),
           guide: settingsGuide(),
+        });
+      } catch (err) {
+        return fail(err instanceof Error ? err.message : String(err));
+      }
+    },
+  );
+
+  register(
+    "add_mailbox",
+    {
+      description:
+        "绑定一个 QQ / 163 / 126 / 腾讯企业邮邮箱。禁止向用户索取 IMAP 授权码，禁止让用户把授权码贴进对话，禁止把授权码放进工具参数。邮箱地址、备注、服务商可以用 form elicitation 收集。授权码只通过 URL elicitation 指向的本机 127.0.0.1 页面提交。若客户端没有相应 elicitation 能力，把返回的手动步骤交给用户，并让用户自己运行 cn-mail-mcp --check 或调用 verify_mailboxes。",
+      inputSchema: toolSchemas.add_mailbox,
+    },
+    async (args, extra) => {
+      try {
+        return await handleAddMailbox(args, extra, {
+          pages: options.pages,
+          verifyLogin:
+            options.verifyLogin ??
+            (async () => ({ ok: false, error: "当前后端不能验证 IMAP 登录" })),
+          reload: () => backend.reloadAccounts(),
+        });
+      } catch (err) {
+        return fail(err instanceof Error ? err.message : String(err));
+      }
+    },
+  );
+
+  register(
+    "verify_mailboxes",
+    {
+      description:
+        "登录每个已绑定邮箱并只返回成功或失败。不会返回授权码。用户改完 .env 或本机账号文件后调用。禁止向用户索取授权码。",
+      inputSchema: toolSchemas.verify_mailboxes,
+    },
+    async () => {
+      try {
+        backend.reloadAccounts();
+        const results = await backend.check();
+        return json({
+          results: results.map((r) => ({ id: r.id, ok: r.ok, error: r.error })),
+          note: "结果不含授权码。",
         });
       } catch (err) {
         return fail(err instanceof Error ? err.message : String(err));
@@ -441,7 +507,7 @@ export function registerMailTools(register: Register, backend: MailBackend): voi
     "get_settings",
     {
       description:
-        "查看当前档位（read/draft/send）和发送白名单，不含密钥。每个新任务应先调用。加邮箱看 add_mailbox；解绑用 unbind_mailbox，不要改仓库。",
+        "查看当前档位（read/draft/send）和发送白名单，不含授权码。每个新任务应先调用。加邮箱用 add_mailbox，禁止向用户索取授权码。解绑用 unbind_mailbox。",
       inputSchema: toolSchemas.get_settings,
     },
     async () => {
@@ -486,7 +552,7 @@ export function registerMailTools(register: Register, backend: MailBackend): voi
     "set_settings",
     {
       description:
-        "在用户选定后修改档位或发送白名单。mode=draft 打开草稿；mode=send 必须带 send_allowlist，且要确认卡片。打开 allow_sensitive 同样要确认卡片。不要把授权码写入此工具。打开发送对账号下所有 Bot 生效。",
+        "在用户选定后修改档位或发送白名单。mode=draft 打开草稿；mode=send 必须带 send_allowlist，且要用户可见的确认。打开 allow_sensitive 同样要确认。不要把授权码写入此工具。",
       inputSchema: toolSchemas.set_settings,
     },
     async (args, extra) => {

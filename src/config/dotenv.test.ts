@@ -2,21 +2,18 @@ import { afterEach, describe, expect, it } from "vitest";
 import { applyDotEnvText, envFileCandidates, stripKeysFromDotEnvText } from "./dotenv.js";
 
 describe("applyDotEnvText", () => {
-  it("fills empty keys and ignores comments", () => {
+  it("fills empty keys and ignores comments and unknown keys", () => {
     const env: NodeJS.ProcessEnv = {};
-    applyDotEnvText(
-      `# hi\nMAIL_USER=you@qq.com\nexport QQCONNECT_PERMISSIONS=read,draft\n`,
-      env,
-    );
+    applyDotEnvText(`# hi\nMAIL_USER=you@qq.com\nexport UNRELATED_PERMISSIONS=read,draft\n`, env);
     expect(env.MAIL_USER).toBe("you@qq.com");
-    expect(env.QQCONNECT_PERMISSIONS).toBeUndefined();
+    expect(env.UNRELATED_PERMISSIONS).toBeUndefined();
   });
 
   it("does not override a value already in the process env", () => {
-    const env: NodeJS.ProcessEnv = { MAIL_USER: "from-grok@qq.com" };
-    applyDotEnvText("MAIL_USER=from-file@qq.com\nQQCONNECT_AUTH_CODE=from-file\n", env);
-    expect(env.MAIL_USER).toBe("from-grok@qq.com");
-    expect(env.QQCONNECT_AUTH_CODE).toBe("from-file");
+    const env: NodeJS.ProcessEnv = { MAIL_USER: "already@qq.com" };
+    applyDotEnvText("MAIL_USER=from-file@qq.com\nMAIL_AUTH_CODE=from-file\n", env);
+    expect(env.MAIL_USER).toBe("already@qq.com");
+    expect(env.MAIL_AUTH_CODE).toBe("from-file");
   });
 
   it("strips matching quotes", () => {
@@ -26,25 +23,23 @@ describe("applyDotEnvText", () => {
     expect(env.MAIL_USER).toBe("a@b.com");
   });
 
-  it("allows QQCONNECT_MAIL_PROXY from dotenv", () => {
-    const env: NodeJS.ProcessEnv = {};
-    applyDotEnvText("QQCONNECT_MAIL_PROXY=http://127.0.0.1:8791\n", env);
-    expect(env.QQCONNECT_MAIL_PROXY).toBe("http://127.0.0.1:8791");
-  });
-
   it("allows CN_MAIL_MCP_MAIL_PROXY from dotenv", () => {
     const env: NodeJS.ProcessEnv = {};
     applyDotEnvText("CN_MAIL_MCP_MAIL_PROXY=http://127.0.0.1:8791\n", env);
     expect(env.CN_MAIL_MCP_MAIL_PROXY).toBe("http://127.0.0.1:8791");
   });
+
+  it("ignores removed legacy proxy names", () => {
+    const env: NodeJS.ProcessEnv = {};
+    applyDotEnvText("QQCONNECT_MAIL_PROXY=http://127.0.0.1:8791\nCNMAIL_MAIL_PROXY=http://127.0.0.1:1\n", env);
+    expect(env.QQCONNECT_MAIL_PROXY).toBeUndefined();
+    expect(env.CNMAIL_MAIL_PROXY).toBeUndefined();
+  });
 });
 
 describe("envFileCandidates", () => {
   afterEach(() => {
-    delete process.env.GROK_PLUGIN_ROOT;
-    delete process.env.QQCONNECT_DOTENV;
     delete process.env.CN_MAIL_MCP_DOTENV;
-    delete process.env.CNMAIL_DOTENV;
   });
 
   it("strips named keys and keeps comments", () => {
@@ -58,8 +53,8 @@ describe("envFileCandidates", () => {
     expect(next).not.toContain("secret");
   });
 
-  it("includes GROK_PLUGIN_ROOT/.env so plugin and workspace files can both apply", () => {
-    process.env.GROK_PLUGIN_ROOT = "/tmp/qqconnect-plugin";
-    expect(envFileCandidates()).toContain("/tmp/qqconnect-plugin/.env");
+  it("includes an explicit CN_MAIL_MCP_DOTENV path", () => {
+    process.env.CN_MAIL_MCP_DOTENV = "/tmp/cn-mail-mcp.env";
+    expect(envFileCandidates()).toContain("/tmp/cn-mail-mcp.env");
   });
 });

@@ -1,4 +1,4 @@
-export const MAX_COMPOSE_BODY = 64 * 1024;
+const MAX_COMPOSE_BODY = 64 * 1024;
 export const MAX_RECIPIENTS = 10;
 
 export type Rfc822Input = {

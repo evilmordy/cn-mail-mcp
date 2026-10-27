@@ -6,6 +6,7 @@ dist/
 !.env.example
 .cn-mail-mcp.json
 .cn-mail-mcp.send-count.json
+# 0.2.0 起不再读取这些旧文件；仍忽略，避免把历史密钥提交进来。
 .grok-bot-cn-mail.json
 .grok-bot-cn-mail.send-count.json
 .qqconnect.json

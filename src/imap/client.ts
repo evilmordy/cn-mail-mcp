@@ -1,9 +1,9 @@
 import { ImapFlow } from "imapflow";
-import { loadAccounts, publicAccountView, unbindEnvAccount, type Account } from "../config/accounts.js";
+import { loadAccounts, publicAccountView, unbindAccount, type Account } from "../config/accounts.js";
 import { loadDotEnv } from "../config/dotenv.js";
 import { resolveMailProxyUrl } from "../config/proxy.js";
 import { assertPublicMailHost } from "../config/presets.js";
-import { logError, logInfo, logWarn } from "../log.js";
+import { logError, logInfo, logWarn, scrubSecrets } from "../log.js";
 import { collectAddresses, replyTargets } from "../mail/compose.js";
 import { attachmentNodes, textParts, type MimeNode } from "../mail/mime.js";
 import {
@@ -38,6 +38,11 @@ import { toImapSearch } from "./search.js";
 
 const MAX_FOLDERS = 200;
 const IMAP_IDLE_MS = 45_000;
+
+function scrubbedError(err: unknown, secrets: Array<string | undefined>): Error {
+  const message = err instanceof Error ? err.message : String(err);
+  return new Error(scrubSecrets(message, secrets));
+}
 
 function imapUsable(client: ImapFlow): boolean {
   return Boolean(client.usable);
@@ -87,7 +92,7 @@ export class ImapMailBackend implements MailBackend {
 
   unbindAccount(accountId: string): { id: string; address: string; cleared: string[] } {
     const acct = this.account(accountId);
-    const { cleared } = unbindEnvAccount(acct);
+    const { cleared } = unbindAccount(acct);
     void this.drop(accountId);
     this.reloadAccounts();
     return { id: acct.id, address: acct.address, cleared };
@@ -116,7 +121,10 @@ export class ImapMailBackend implements MailBackend {
       ...(proxy ? { proxy } : {}),
     });
     client.on("error", (err) => {
-      logError("imap.error", err, { accountId: account.id, host: account.host });
+      logError("imap.error", scrubbedError(err, [account.authCode]), {
+        accountId: account.id,
+        host: account.host,
+      });
       void this.drop(account.id);
     });
     return client;
@@ -138,7 +146,7 @@ export class ImapMailBackend implements MailBackend {
       return await fn(client);
     } catch (err) {
       await this.drop(account.id);
-      throw err;
+      throw scrubbedError(err, [account.authCode]);
     } finally {
       this.armIdle(account.id);
       unlock();
@@ -180,7 +188,8 @@ export class ImapMailBackend implements MailBackend {
       await slot.client.logout();
     } catch (err) {
       logWarn("imap.logout_failed", { accountId });
-      logError("imap.logout", err, { accountId });
+      const code = this.accounts.find((a) => a.id === accountId)?.authCode;
+      logError("imap.logout", scrubbedError(err, [code]), { accountId });
     }
   }
 
@@ -365,28 +374,36 @@ export class ImapMailBackend implements MailBackend {
     });
   }
 
+  async verifyAccount(account: Account): Promise<{ ok: boolean; error?: string }> {
+    try {
+      const proxy = resolveMailProxyUrl();
+      await assertPublicMailHost(account.host, undefined, { viaProxy: Boolean(proxy) });
+      if (account.smtpHost) {
+        await assertPublicMailHost(account.smtpHost, undefined, { viaProxy: Boolean(proxy) });
+      }
+      const client = this.createClient(account);
+      try {
+        await client.connect();
+      } finally {
+        try {
+          await client.logout();
+        } catch {
+          /* ignore */
+        }
+      }
+      return { ok: true };
+    } catch (err) {
+      const message = scrubSecrets(err instanceof Error ? err.message : String(err), [account.authCode]);
+      logError("imap.check_failed", new Error(message), { accountId: account.id });
+      return { ok: false, error: message };
+    }
+  }
+
   async check(): Promise<{ id: string; ok: boolean; error?: string }[]> {
     const results: { id: string; ok: boolean; error?: string }[] = [];
     for (const account of this.accounts) {
-      try {
-        const proxy = resolveMailProxyUrl();
-        await assertPublicMailHost(account.host, undefined, { viaProxy: Boolean(proxy) });
-        const client = this.createClient(account);
-        try {
-          await client.connect();
-          results.push({ id: account.id, ok: true });
-        } finally {
-          try {
-            await client.logout();
-          } catch {
-            /* ignore */
-          }
-        }
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        logError("imap.check_failed", err, { accountId: account.id });
-        results.push({ id: account.id, ok: false, error: message });
-      }
+      const one = await this.verifyAccount(account);
+      results.push({ id: account.id, ok: one.ok, error: one.error });
     }
     return results;
   }
@@ -556,7 +573,7 @@ export class ImapMailBackend implements MailBackend {
       sentCopied = true;
     } catch (err) {
       logWarn("mail.sent_copy_failed", { accountId: account.id });
-      logError("mail.sent_copy", err, { accountId: account.id });
+      logError("mail.sent_copy", scrubbedError(err, [account.authCode]), { accountId: account.id });
     }
     return {
       messageId: messageIdHdr,

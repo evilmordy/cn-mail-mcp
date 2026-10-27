@@ -10,22 +10,25 @@ import { createMailServer } from "./mcp/server.js";
 import { initRuntime, watchScriptOrExit } from "./runtime.js";
 
 function usage(): void {
-  process.stderr.write(`cn-mail-mcp — IMAP MCP for Grok Bot (QQ / 163 / 126 / Tencent exmail; read by default)
+  process.stderr.write(`cn-mail-mcp — IMAP/SMTP MCP（QQ / 163 / 126 / 腾讯企业邮，默认只读）
 
 Usage:
-  cn-mail-mcp                 start MCP on stdio
-  cn-mail-mcp --check         login to each mailbox and exit
-  cn-mail-mcp setup           interactive mode picker
+  cn-mail-mcp                     在 stdio 上启动 MCP
+  cn-mail-mcp --check             登录每个已绑定邮箱后退出
+  cn-mail-mcp accounts list       列出已绑定邮箱（不含授权码）
+  cn-mail-mcp accounts path       打印本机账号文件路径
+  cn-mail-mcp accounts add        在本机终端绑定邮箱（授权码只在终端输入）
+  cn-mail-mcp accounts verify [id]
+  cn-mail-mcp accounts unbind <account_id>
+  cn-mail-mcp setup               交互选择档位
   cn-mail-mcp config show
   cn-mail-mcp config set-mode read|draft|send [--allow a@b.com]
   cn-mail-mcp config allowlist add|remove|set a@b.com,...
   cn-mail-mcp config allow-sensitive on|off
   cn-mail-mcp config unbind <account_id>
 
-Aliases (deprecated): grok-bot-cn-mail, qqconnect
-
-Secrets (.env): MAIL_USER / MAIL_AUTH_CODE
-Policy (.cn-mail-mcp.json; also reads .grok-bot-cn-mail.json / .qqconnect.json): mode, send_allowlist, allow_sensitive
+授权码放本机账号文件或 MAIL_AUTH_CODE，不要写入 git、对话或日志。
+档位在 .cn-mail-mcp.json：mode、send_allowlist、allow_sensitive。
 `);
 }
 
@@ -43,10 +46,14 @@ async function main(): Promise<void> {
     return;
   }
 
-  const accounts = loadAccounts();
+  const accounts = loadAccounts({ allowEmpty: true });
   const backend = new ImapMailBackend(accounts);
 
   if (args.includes("--check")) {
+    if (accounts.length === 0) {
+      process.stderr.write("没有已绑定的邮箱。先运行 cn-mail-mcp accounts add，或配置 MAIL_USER / MAIL_AUTH_CODE。\n");
+      process.exit(1);
+    }
     const results = await backend.check();
     process.stderr.write(`${JSON.stringify({ results }, null, 2)}\n`);
     process.exit(results.every((r) => r.ok) ? 0 : 1);

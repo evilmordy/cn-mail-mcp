@@ -13,7 +13,7 @@ export type Settings = {
   allow_sensitive: boolean;
 };
 
-export const DEFAULT_SETTINGS: Settings = {
+const DEFAULT_SETTINGS: Settings = {
   mode: "read",
   send_allowlist: [],
   allow_sensitive: false,
@@ -27,9 +27,8 @@ export function overrideSettingsForTest(value: Settings | null): void {
   cache = null;
 }
 
-/** Preferred first; legacy names kept for existing installs. */
-const SETTINGS_NAMES = [".cn-mail-mcp.json", ".grok-bot-cn-mail.json", ".qqconnect.json"];
-const SEND_COUNT_NAMES = [".cn-mail-mcp.send-count.json", ".grok-bot-cn-mail.send-count.json"];
+const SETTINGS_NAMES = [".cn-mail-mcp.json"];
+const SEND_COUNT_NAMES = [".cn-mail-mcp.send-count.json"];
 
 function settingsFileCandidates(fromModuleUrl: string = import.meta.url): string[] {
   const explicit = envFirst(CONFIG_ENV_NAMES)?.trim();

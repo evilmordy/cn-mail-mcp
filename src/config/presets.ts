@@ -1,7 +1,7 @@
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 
-export type ProviderId = "qq" | "foxmail" | "exmail" | "163" | "126" | "custom";
+type ProviderId = "qq" | "foxmail" | "exmail" | "163" | "126" | "custom";
 
 export type ImapPreset = {
   provider: ProviderId;
@@ -85,6 +85,21 @@ export function domainOf(address: string): string {
     throw new Error("mailbox address must be a full email, like you@qq.com");
   }
   return address.slice(at + 1).toLowerCase();
+}
+
+const PROVIDER_SAMPLE: Record<string, string> = {
+  qq: "user@qq.com",
+  "163": "user@163.com",
+  "126": "user@126.com",
+  exmail: "user@exmail.qq.com",
+};
+
+/** Resolve hosts from an address, or from an explicit provider choice (auto = by domain). */
+export function presetFor(address: string, provider?: string): ImapPreset {
+  if (!provider || provider === "auto") return resolvePreset(address);
+  const sample = PROVIDER_SAMPLE[provider];
+  if (!sample) return resolvePreset(address);
+  return resolvePreset(sample);
 }
 
 export function resolvePreset(address: string): ImapPreset {
