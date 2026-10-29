@@ -1,16 +1,14 @@
 {
   "name": "cn-mail-mcp",
-  "version": "0.1.0",
-  "description": "IMAP MCP (cn-mail-mcp) so Grok Bot can search and read QQ / 163 / 126 / Tencent exmail.",
+  "version": "0.2.0",
+  "description": "IMAP/SMTP MCP server for QQ, 163, 126, and Tencent exmail. Read-only by default.",
   "type": "module",
   "packageManager": "pnpm@11.8.0",
   "engines": {
     "node": ">=22"
   },
   "bin": {
-    "cn-mail-mcp": "./dist/index.js",
-    "grok-bot-cn-mail": "./dist/index.js",
-    "qqconnect": "./dist/index.js"
+    "cn-mail-mcp": "./dist/index.js"
   },
   "repository": {
     "type": "git",
@@ -23,7 +21,6 @@
   "main": "./dist/index.js",
   "files": [
     "dist",
-    "plugin",
     "skills",
     "SECURITY.md",
     "README.md",
@@ -38,6 +35,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "knip": "knip",
     "audit": "pnpm audit --audit-level=high"
   },
   "keywords": [
@@ -46,7 +44,6 @@
     "qq-mail",
     "163",
     "cn-mail",
-    "grok-bot",
     "email"
   ],
   "license": "MIT",
@@ -61,6 +58,7 @@
     "@types/html-to-text": "^9.0.4",
     "@types/node": "^24.5.2",
     "@types/nodemailer": "^8.0.1",
+    "knip": "^6.43.0",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
   }

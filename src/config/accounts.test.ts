@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { addMailboxHint, loadAccounts, unbindEnvAccount, unbindMailboxHint } from "./accounts.js";
+import { addMailboxHint, loadAccounts, unbindAccount, unbindMailboxHint } from "./accounts.js";
 
 const KEYS = [
   "MAIL_USER",
@@ -9,8 +9,8 @@ const KEYS = [
   "MAIL_ACCOUNT_ID_2",
   "MAIL_HOST",
   "MAIL_SMTP_HOST",
-  "QQCONNECT_ACCOUNTS",
-  "QQCONNECT_IMAP_ID",
+  "CN_MAIL_MCP_ACCOUNTS",
+  "MAIL_IMAP_ID",
 ];
 
 afterEach(() => {
@@ -27,6 +27,7 @@ describe("loadAccounts", () => {
     expect(acct.address).toBe("me@qq.com");
     expect(acct.smtpHost).toBe("smtp.qq.com");
     expect(acct.smtpPort).toBe(465);
+    expect(acct.source).toBe("env");
   });
 
   it("rejects private hosts", () => {
@@ -46,18 +47,19 @@ describe("loadAccounts", () => {
 
   it("reads JSON accounts with authCodeEnv", () => {
     process.env.QQ_CODE = "sixteencharscode1";
-    process.env.QQCONNECT_ACCOUNTS = JSON.stringify([
+    process.env.CN_MAIL_MCP_ACCOUNTS = JSON.stringify([
       { id: "work", address: "a@163.com", authCodeEnv: "QQ_CODE" },
     ]);
     const [acct] = loadAccounts();
     expect(acct.id).toBe("work");
     expect(acct.host).toBe("imap.163.com");
     expect(acct.authCode).toBe("sixteencharscode1");
+    expect(acct.source).toBe("json");
     delete process.env.QQ_CODE;
   });
 
-  it("rejects inline authCode in QQCONNECT_ACCOUNTS JSON", () => {
-    process.env.QQCONNECT_ACCOUNTS = JSON.stringify([
+  it("rejects inline authCode in CN_MAIL_MCP_ACCOUNTS JSON", () => {
+    process.env.CN_MAIL_MCP_ACCOUNTS = JSON.stringify([
       { id: "qq", address: "a@qq.com", authCode: "abcdefghijklmnop" },
     ]);
     expect(() => loadAccounts()).toThrow(/authCodeEnv/);
@@ -85,7 +87,8 @@ describe("addMailboxHint", () => {
       MAIL_AUTH_CODE: "MAIL_AUTH_CODE_2",
       MAIL_ACCOUNT_ID: "MAIL_ACCOUNT_ID_2",
     });
-    expect(hint.guide).toMatch(/密钥框/);
+    expect(hint.guide).toMatch(/add_mailbox/);
+    expect(hint.guide).toMatch(/不要向用户索取授权码/);
     expect(hint.guide).not.toMatch(/@qq\.com|@163\.com/);
   });
 
@@ -98,7 +101,7 @@ describe("addMailboxHint", () => {
   });
 });
 
-describe("unbindEnvAccount", () => {
+describe("unbindAccount", () => {
   it("clears MAIL_USER_2 from the process env", () => {
     process.env.MAIL_USER = "me@qq.com";
     process.env.MAIL_AUTH_CODE = "abcdefghijklmnop";
@@ -108,7 +111,7 @@ describe("unbindEnvAccount", () => {
     const accts = loadAccounts();
     const work = accts.find((a) => a.id === "work");
     expect(work).toBeTruthy();
-    unbindEnvAccount(work!);
+    unbindAccount(work!);
     expect(process.env.MAIL_USER_2).toBeUndefined();
     expect(process.env.MAIL_AUTH_CODE_2).toBeUndefined();
     const left = loadAccounts({ allowEmpty: true });

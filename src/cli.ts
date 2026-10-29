@@ -1,7 +1,8 @@
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
-import { loadAccounts, publicAccountView, unbindEnvAccount } from "./config/accounts.js";
+import { loadAccounts, publicAccountView, unbindAccount } from "./config/accounts.js";
 import { parseSendAllowlist } from "./config/allowlist.js";
+import { accountsFilePath } from "./config/store.js";
 import {
   getSettings,
   patchSettings,
@@ -9,6 +10,8 @@ import {
   type ConnectMode,
   type Settings,
 } from "./config/settings.js";
+import { ImapMailBackend } from "./imap/client.js";
+import { commitMailbox } from "./onboarding/commit.js";
 
 function printSettings(s: Settings): void {
   process.stdout.write(`${JSON.stringify(s, null, 2)}\n`);
@@ -25,8 +28,12 @@ export async function runCli(argv: string[]): Promise<void> {
     await runSetup();
     return;
   }
+  if (cmd === "accounts") {
+    await runAccounts(sub, rest);
+    return;
+  }
   if (cmd !== "config") {
-    throw new Error(`unknown command ${cmd}; try config or setup`);
+    throw new Error(`unknown command ${cmd}; try config, accounts, or setup`);
   }
   if (!sub || sub === "show") {
     printSettings(getSettings());
@@ -61,12 +68,7 @@ export async function runCli(argv: string[]): Promise<void> {
   if (sub === "unbind") {
     const id = rest[0];
     if (!id) throw new Error("config unbind <account_id>");
-    const accounts = loadAccounts({ allowEmpty: true });
-    const acct = accounts.find((a) => a.id === id);
-    if (!acct) throw new Error(`unknown account ${id}`);
-    unbindEnvAccount(acct);
-    const remaining = loadAccounts({ allowEmpty: true }).map(publicAccountView);
-    process.stdout.write(`${JSON.stringify({ unbound: id, remaining }, null, 2)}\n`);
+    await unbindById(id);
     return;
   }
   if (sub === "allow-sensitive") {
@@ -78,6 +80,80 @@ export async function runCli(argv: string[]): Promise<void> {
     return;
   }
   throw new Error("config commands: show | set-mode | allowlist | allow-sensitive | unbind");
+}
+
+async function unbindById(id: string): Promise<void> {
+  const accounts = loadAccounts({ allowEmpty: true });
+  const acct = accounts.find((a) => a.id === id);
+  if (!acct) throw new Error(`unknown account ${id}`);
+  unbindAccount(acct);
+  const remaining = loadAccounts({ allowEmpty: true }).map(publicAccountView);
+  process.stdout.write(`${JSON.stringify({ unbound: id, remaining }, null, 2)}\n`);
+}
+
+async function runAccounts(sub: string | undefined, rest: string[]): Promise<void> {
+  if (!sub || sub === "list") {
+    const accounts = loadAccounts({ allowEmpty: true }).map(publicAccountView);
+    process.stdout.write(`${JSON.stringify({ accounts, accounts_file: accountsFilePath() }, null, 2)}\n`);
+    return;
+  }
+  if (sub === "path") {
+    process.stdout.write(`${accountsFilePath()}\n`);
+    return;
+  }
+  if (sub === "unbind") {
+    const id = rest[0];
+    if (!id) throw new Error("accounts unbind <account_id>");
+    await unbindById(id);
+    return;
+  }
+  if (sub === "verify") {
+    const accounts = loadAccounts({ allowEmpty: true });
+    if (accounts.length === 0) {
+      throw new Error("没有已绑定的邮箱。先运行 cn-mail-mcp accounts add，或配置 MAIL_USER / MAIL_AUTH_CODE。");
+    }
+    const id = rest[0];
+    const selected = id ? accounts.filter((a) => a.id === id) : accounts;
+    if (id && selected.length === 0) throw new Error(`unknown account ${id}`);
+    const backend = new ImapMailBackend(selected);
+    const results = await backend.check();
+    process.stderr.write(`${JSON.stringify({ results }, null, 2)}\n`);
+    if (!results.every((r) => r.ok)) process.exitCode = 1;
+    return;
+  }
+  if (sub === "add") {
+    await runAccountsAdd();
+    return;
+  }
+  throw new Error("accounts commands: list | path | add | unbind | verify");
+}
+
+async function runAccountsAdd(): Promise<void> {
+  if (!input.isTTY) {
+    process.stderr.write(
+      "当前不是交互终端，拒绝从管道读取授权码。请在你自己的终端运行 cn-mail-mcp accounts add，或编辑 .env / 账号文件后运行 cn-mail-mcp --check。不要把授权码贴进对话。\n",
+    );
+    process.exitCode = 2;
+    return;
+  }
+  const rl = createInterface({ input, output });
+  try {
+    const address = (await rl.question("邮箱地址（例如 you@qq.com）：")).trim();
+    const label = (await rl.question("备注（可空）：")).trim();
+    const providerRaw = (await rl.question("服务商 auto/qq/163/126/exmail（默认 auto）：")).trim() || "auto";
+    const provider = ["auto", "qq", "163", "126", "exmail"].includes(providerRaw) ? providerRaw : "auto";
+    const authCode = (await rl.question("IMAP 授权码（只在此终端输入，不要发给助手）：")).trim();
+    const backend = new ImapMailBackend([]);
+    const result = await commitMailbox(
+      { address, label: label || undefined, provider, accountId: undefined },
+      authCode,
+      (account) => backend.verifyAccount(account),
+    );
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    if (!result.ok) process.exitCode = 1;
+  } finally {
+    rl.close();
+  }
 }
 
 async function runSetup(): Promise<void> {

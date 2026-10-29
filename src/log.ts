@@ -1,4 +1,14 @@
-const SECRET_KEYS = /auth.?code|password|pass\b|secret|token|authorization/i;
+const SECRET_KEYS = /auth.?code|password|pass\b|secret|token|authorization|csrf/i;
+
+/** Remove known secret strings from a message before it reaches a tool result or log. */
+export function scrubSecrets(message: string, secrets: Array<string | undefined>): string {
+  let out = message;
+  for (const secret of secrets) {
+    if (!secret || secret.length < 4) continue;
+    out = out.split(secret).join("[redacted]");
+  }
+  return out;
+}
 
 function redactValue(key: string, value: unknown): unknown {
   if (SECRET_KEYS.test(key)) return "[redacted]";

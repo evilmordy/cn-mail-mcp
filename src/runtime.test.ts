@@ -12,7 +12,7 @@ afterEach(() => {
 describe("serverStatus", () => {
   it("is not stale before init", () => {
     expect(serverStatus().needs_restart).toBe(false);
-    expect(serverStatus().version).toBe("0.1.0");
+    expect(serverStatus().version).toBe("0.2.0");
   });
 
   it("sets needs_restart when the boot script mtime changes", () => {

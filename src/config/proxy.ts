@@ -1,21 +1,12 @@
 /** Loopback-only HTTP(S) CONNECT proxy for IMAP/SMTP egress (env-configured). */
 
-import {
-  IMAP_PROXY_ENV_NAMES,
-  MAIL_PROXY_ENV_NAMES,
-  envFirst,
-} from "./env.js";
+import { IMAP_PROXY_ENV_NAMES, MAIL_PROXY_ENV_NAMES, envFirst } from "./env.js";
 
 const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "::1"]);
 
 export type MailProxyEnv = NodeJS.ProcessEnv & {
   CN_MAIL_MCP_MAIL_PROXY?: string;
-  CNMAIL_MAIL_PROXY?: string;
-  QQCONNECT_MAIL_PROXY?: string;
   CN_MAIL_MCP_IMAP_PROXY?: string;
-  CNMAIL_IMAP_PROXY?: string;
-  QQCONNECT_IMAP_PROXY?: string;
-  SAND_EGRESS_TUNNEL_PROXY_ADDR?: string;
 };
 
 function stripBrackets(host: string): string {
@@ -48,7 +39,6 @@ export function parseLoopbackHttpProxyUrl(raw: string): string {
   if (!LOOPBACK_HOSTS.has(host)) {
     throw new Error("mail proxy host must be loopback (127.0.0.1, localhost, or ::1)");
   }
-  // Drop path/query/hash; keep scheme, host, port.
   const port = url.port ? Number(url.port) : scheme === "https:" ? 443 : 80;
   if (!Number.isInteger(port) || port < 1 || port > 65535) {
     throw new Error("mail proxy port is invalid");
@@ -59,7 +49,7 @@ export function parseLoopbackHttpProxyUrl(raw: string): string {
 
 /**
  * Resolve optional mail proxy from env (never from tool args).
- * Preference: CN_MAIL_MCP_MAIL_PROXY / CNMAIL_* / QQCONNECT_MAIL_PROXY → IMAP_PROXY aliases → SAND_EGRESS_TUNNEL_PROXY_ADDR.
+ * Preference: CN_MAIL_MCP_MAIL_PROXY, then CN_MAIL_MCP_IMAP_PROXY.
  * Returns undefined when unset. Throws if a provided value fails validation.
  */
 export function resolveMailProxyUrl(env: MailProxyEnv = process.env): string | undefined {
@@ -68,15 +58,6 @@ export function resolveMailProxyUrl(env: MailProxyEnv = process.env): string | u
 
   const legacy = envFirst(IMAP_PROXY_ENV_NAMES, env)?.trim();
   if (legacy) return parseLoopbackHttpProxyUrl(legacy);
-
-  const sand = env.SAND_EGRESS_TUNNEL_PROXY_ADDR?.trim();
-  if (sand) {
-    // HOST:PORT or already a URL
-    if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(sand)) {
-      return parseLoopbackHttpProxyUrl(sand);
-    }
-    return parseLoopbackHttpProxyUrl(`http://${sand}`);
-  }
   return undefined;
 }
 

@@ -3,10 +3,10 @@ import { fileURLToPath } from "node:url";
 import { mailProxyEnabled } from "./config/proxy.js";
 import { logError } from "./log.js";
 
-export const SERVER_VERSION = "0.1.0";
+export const SERVER_VERSION = "0.2.0";
 
 const RESTART_GUIDE =
-  "请停止再启动 cn-mail-mcp。不要卸载排查，不要改 MCP 启动命令，不要在进程还连着时 rm -rf 插件或工作区。";
+  "请停止再启动 cn-mail-mcp。不要在进程还连着时删除安装目录，也不要把这当成邮箱登录失败。";
 
 type Boot = { path: string; mtimeMs: number; size: number; startedAt: string };
 

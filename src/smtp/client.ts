@@ -4,9 +4,10 @@ import nodemailer from "nodemailer";
 import type { Account } from "../config/accounts.js";
 import { resolveMailProxyUrl } from "../config/proxy.js";
 import { assertPublicMailHost } from "../config/presets.js";
+import { scrubSecrets } from "../log.js";
 
 export const MAX_SENDS_PER_WINDOW = 5;
-export const SEND_WINDOW_MS = 60 * 60 * 1000;
+const SEND_WINDOW_MS = 60 * 60 * 1000;
 
 type SendBucket = { startedAt: number; count: number };
 
@@ -104,6 +105,9 @@ export async function sendSmtp(account: Account, payload: SmtpPayload): Promise<
       inReplyTo: payload.inReplyTo,
       references: payload.references,
     });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new Error(scrubSecrets(message, [account.authCode]));
   } finally {
     transport.close();
   }

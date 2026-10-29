@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { parseLoopbackHttpProxyUrl, resolveMailProxyUrl } from "./proxy.js";
 
 describe("parseLoopbackHttpProxyUrl", () => {
@@ -21,31 +21,28 @@ describe("parseLoopbackHttpProxyUrl", () => {
 });
 
 describe("resolveMailProxyUrl", () => {
-  afterEach(() => {
-    /* env objects are local; nothing global to clear */
-  });
-
-  it("prefers CN_MAIL_MCP_MAIL_PROXY over QQCONNECT and SAND", () => {
+  it("prefers CN_MAIL_MCP_MAIL_PROXY over CN_MAIL_MCP_IMAP_PROXY", () => {
     expect(
       resolveMailProxyUrl({
         CN_MAIL_MCP_MAIL_PROXY: "http://127.0.0.1:8791",
-        QQCONNECT_MAIL_PROXY: "http://127.0.0.1:8888",
-        QQCONNECT_IMAP_PROXY: "http://127.0.0.1:9999",
-        SAND_EGRESS_TUNNEL_PROXY_ADDR: "127.0.0.1:1111",
+        CN_MAIL_MCP_IMAP_PROXY: "http://127.0.0.1:9999",
       }),
     ).toBe("http://127.0.0.1:8791");
   });
 
-  it("falls back to QQCONNECT_MAIL_PROXY then IMAP_PROXY then SAND", () => {
-    expect(resolveMailProxyUrl({ QQCONNECT_MAIL_PROXY: "http://127.0.0.1:8791" })).toBe(
-      "http://127.0.0.1:8791",
-    );
-    expect(resolveMailProxyUrl({ QQCONNECT_IMAP_PROXY: "http://127.0.0.1:9999" })).toBe(
+  it("falls back to CN_MAIL_MCP_IMAP_PROXY", () => {
+    expect(resolveMailProxyUrl({ CN_MAIL_MCP_IMAP_PROXY: "http://127.0.0.1:9999" })).toBe(
       "http://127.0.0.1:9999",
     );
-    expect(resolveMailProxyUrl({ SAND_EGRESS_TUNNEL_PROXY_ADDR: "127.0.0.1:8791" })).toBe(
-      "http://127.0.0.1:8791",
-    );
+  });
+
+  it("does not read removed legacy proxy env names", () => {
+    expect(
+      resolveMailProxyUrl({
+        QQCONNECT_MAIL_PROXY: "http://127.0.0.1:8791",
+        SAND_EGRESS_TUNNEL_PROXY_ADDR: "127.0.0.1:1111",
+      } as NodeJS.ProcessEnv),
+    ).toBeUndefined();
   });
 
   it("returns undefined when unset", () => {
@@ -54,8 +51,5 @@ describe("resolveMailProxyUrl", () => {
 
   it("throws on invalid configured proxy", () => {
     expect(() => resolveMailProxyUrl({ CN_MAIL_MCP_MAIL_PROXY: "socks5://127.0.0.1:1" })).toThrow();
-    expect(() => resolveMailProxyUrl({ SAND_EGRESS_TUNNEL_PROXY_ADDR: "8.8.8.8:8791" })).toThrow(
-      /loopback/,
-    );
   });
 });

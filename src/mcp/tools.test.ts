@@ -113,6 +113,8 @@ describe("tool schemas", () => {
 describe("registerMailTools", () => {
   it("always registers settings plus mail tools", () => {
     const calls = collect();
+    expect(calls.has("add_mailbox")).toBe(true);
+    expect(calls.has("verify_mailboxes")).toBe(true);
     expect(calls.has("get_settings")).toBe(true);
     expect(calls.has("set_settings")).toBe(true);
     expect(calls.has("save_draft")).toBe(true);
@@ -125,9 +127,10 @@ describe("registerMailTools", () => {
     expect(listed.content[0].text).toContain("you@qq.com");
     expect(listed.content[0].text).toContain("guide");
     expect(listed.content[0].text).toContain("MAIL_USER_2");
+    expect(listed.content[0].text).toContain("add_mailbox");
     expect(listed.content[0].text).toContain("unbind_mailbox");
     expect(listed.content[0].text).toContain("needs_restart");
-    expect(listed.content[0].text).toContain("密钥框");
+    expect(listed.content[0].text).toContain("不要向用户索取授权码");
     expect(listed.content[0].text).not.toMatch(/password/i);
 
     const body = (await calls.get("get_message")!({
